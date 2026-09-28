@@ -27,8 +27,13 @@ struct MainToolbar: ToolbarContent {
 struct CareMyMacCommands: Commands {
     let monitor: LiveMonitor
     let appModel: AppModel
+    let updater: Updater
 
     var body: some Commands {
+        CommandGroup(after: .appInfo) {
+            Button("Check for Updates…") { updater.checkForUpdates() }
+                .disabled(!updater.canCheckForUpdates)
+        }
         CommandGroup(after: .saveItem) {
             Divider()
             // The summary is built on click, so the menu never re-renders with live data.

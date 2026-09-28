@@ -15,7 +15,7 @@ struct CareMyMacApp: App {
         }
         .defaultSize(width: 1280, height: 880)
         .windowToolbarStyle(.unified)
-        .commands { CareMyMacCommands(monitor: delegate.monitor, appModel: delegate.appModel) }
+        .commands { CareMyMacCommands(monitor: delegate.monitor, appModel: delegate.appModel, updater: delegate.updater) }
 
         Settings {
             SettingsView()
@@ -23,6 +23,7 @@ struct CareMyMacApp: App {
                 .environment(delegate.appModel)
                 .environment(delegate.notifier)
                 .environment(delegate.loginItem)
+                .environment(delegate.updater)
                 .capturesOpenWindow(for: delegate)
         }
         .windowResizability(.contentSize)
@@ -32,6 +33,7 @@ struct CareMyMacApp: App {
                 .countsAsVisibleWindow()
                 .environment(delegate.monitor)
                 .environment(delegate.appModel)
+                .environment(delegate.updater)
         } label: {
             MenuBarLabel()
                 .environment(delegate.monitor)

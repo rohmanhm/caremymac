@@ -14,12 +14,16 @@ import UserNotifications
 /// (the panel hosted offscreen) and `statusitem.png` into the snapshot folder.
 /// `-CareMyMacLogVisibility YES` prints the refresh interval and the app's windows whenever visibility changes.
 /// `-CareMyMacCheckIntegration YES` hides and re-shows the menu bar extra, then sends a test alert through the notifier.
+/// `-CareMyMacCheckForUpdates YES` runs Check for Updates… at launch; with `-CareMyMacSnapshotDir` it writes Sparkle's
+/// prompt to `update.png` and the menu bar panel with its update row to `menubar-update.png`. Point it at a test feed
+/// with `-CareMyMacFeedURL <url>`.
 @MainActor
 enum DebugExtras {
     static func runIfRequested(delegate: AppDelegate) {
         let defaults = UserDefaults.standard
         if defaults.bool(forKey: "CareMyMacLogVisibility") { logVisibility(monitor: delegate.monitor) }
         if defaults.bool(forKey: "CareMyMacCheckIntegration") { checkIntegration(delegate: delegate) }
+        if defaults.bool(forKey: "CareMyMacCheckForUpdates") { checkForUpdates(delegate: delegate, directory: defaults.string(forKey: "CareMyMacSnapshotDir")) }
         guard defaults.bool(forKey: "CareMyMacOpenSettings"),
               let directory = defaults.string(forKey: "CareMyMacSnapshotDir") else { return }
         let warmup = max(2, defaults.double(forKey: "CareMyMacSnapshotWarmup"))
@@ -52,6 +56,7 @@ enum DebugExtras {
         let root = MenuBarContent()
             .environment(delegate.monitor)
             .environment(delegate.appModel)
+            .environment(delegate.updater)
             .background(.windowBackground)
         let host = NSHostingView(rootView: root)
         host.appearance = NSApp.appearance
@@ -61,6 +66,25 @@ enum DebugExtras {
         host.frame = NSRect(origin: .zero, size: host.fittingSize)
         host.layoutSubtreeIfNeeded()
         render(host, to: path)
+    }
+
+    private static func checkForUpdates(delegate: AppDelegate, directory: String?) {
+        Task {
+            try? await Task.sleep(for: .seconds(2))
+            delegate.updater.checkForUpdates()
+            for _ in 0..<60 where delegate.updater.availableVersion == nil {
+                try? await Task.sleep(for: .milliseconds(500))
+            }
+            log("[updates] available=\(delegate.updater.availableVersion ?? "none") lastCheck=\(delegate.updater.lastCheckDate.map { "\($0)" } ?? "never")")
+            guard let directory else { return }
+            // Let the release notes load.
+            try? await Task.sleep(for: .seconds(2))
+            try? FileManager.default.createDirectory(atPath: directory, withIntermediateDirectories: true)
+            if let alert = NSApp.windows.first(where: { $0.isVisible && String(describing: $0.windowController.map { type(of: $0) }).contains("SUUpdateAlert") }) {
+                render(alert.contentView?.superview, to: "\(directory)/update.png")
+            }
+            renderPanel(delegate: delegate, to: "\(directory)/menubar-update.png")
+        }
     }
 
     private static func render(_ view: NSView?, to path: String) {

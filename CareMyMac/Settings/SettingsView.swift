@@ -9,6 +9,7 @@ struct SettingsView: View {
     @Environment(AppModel.self) private var appModel
     @Environment(AlertNotifier.self) private var notifier
     @Environment(LoginItem.self) private var loginItem
+    @Environment(Updater.self) private var updater
     @Environment(\.openWindow) private var openWindow
 
     @AppStorage(SettingsKey.visibleInterval) private var visibleInterval = 2.0
@@ -25,6 +26,7 @@ struct SettingsView: View {
             menuBar
             alerts
             storage
+            updates
             about
         }
         .formStyle(.grouped)
@@ -147,6 +149,30 @@ struct SettingsView: View {
         }
     }
 
+    private var updates: some View {
+        Section {
+            Toggle("Check for updates automatically", isOn: Bindable(updater).automaticallyChecks)
+            Toggle("Download and install updates automatically", isOn: Bindable(updater).automaticallyDownloads)
+                .disabled(!updater.automaticallyChecks)
+            LabeledContent {
+                Button(updater.availableVersion == nil ? "Check Now" : "Install…") { updater.checkForUpdates() }
+                    .disabled(!updater.canCheckForUpdates && updater.availableVersion == nil)
+            } label: {
+                if let version = updater.availableVersion {
+                    Text("CareMyMac \(version) is available")
+                } else {
+                    Text("Last checked")
+                }
+                Text(updater.lastCheckDate?.formatted(date: .abbreviated, time: .shortened) ?? "Never")
+            }
+        } header: {
+            Text("Updates")
+        } footer: {
+            Text("CareMyMac looks for new releases on GitHub once a day and verifies each update’s signature before installing it.")
+                .settingsFootnote()
+        }
+    }
+
     private var about: some View {
         Section {
             LabeledContent("Version", value: Self.version)
@@ -198,7 +224,7 @@ struct SettingsView: View {
         let info = Bundle.main.infoDictionary
         let short = info?["CFBundleShortVersionString"] as? String ?? "–"
         let build = info?["CFBundleVersion"] as? String ?? "–"
-        return "\(short) (\(build))"
+        return build == short ? short : "\(short) (\(build))"
     }
 }
 

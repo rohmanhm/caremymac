@@ -11,6 +11,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     let notifier = AlertNotifier()
     let loginItem = LoginItem()
     let menuBar = MenuBarVisibility()
+    let updater = Updater()
     private lazy var visibility = WindowVisibility(monitor: monitor)
     /// SwiftUI's window opener, captured by the first scene view that appears. AppKit callbacks have no environment.
     var openWindow: OpenWindowAction?
@@ -32,6 +33,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         UNUserNotificationCenter.current().delegate = self
         monitor.onNewAlerts = { [notifier] events in notifier.post(events) }
         monitor.start()
+        updater.start()
         visibility.start()
         #if DEBUG
         DebugSnapshot.runIfRequested(monitor: monitor, appModel: appModel)

@@ -38,6 +38,15 @@ snapshot screens="busy,allApps,background,developer,thisMac,thisMac:cpu,thisMac:
         -CareMyMacAppearance {{appearance}}
     @echo "Snapshots in {{dir}}/{{appearance}}"
 
+# Build the update zip and signed appcast into build/release, e.g. `just package 0.2.0` (signs with the keychain key)
+package version:
+    scripts/release.sh {{version}}
+
+# Tag a version and push the tag; the Release workflow builds and publishes it, e.g. `just publish 0.2.0`
+publish version:
+    git tag -a "v{{version}}" -m "CareMyMac {{version}}"
+    git push origin "v{{version}}"
+
 # Open the project in Xcode
 xcode:
     open {{project}}

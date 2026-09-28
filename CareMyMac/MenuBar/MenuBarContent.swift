@@ -8,6 +8,7 @@ import SwiftUI
 /// The menu bar panel: a one-line status, the last minute of every resource, the busiest apps, and quick actions.
 struct MenuBarContent: View {
     @Environment(LiveMonitor.self) private var monitor
+    @Environment(Updater.self) private var updater
 
     var body: some View {
         VStack(spacing: 0) {
@@ -24,6 +25,12 @@ struct MenuBarContent: View {
                 .padding(.horizontal, 8)
                 .padding(.vertical, 8)
             Divider()
+            if let version = updater.availableVersion {
+                MenuBarUpdate(version: version)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 8)
+                Divider()
+            }
             MenuBarActions()
                 .padding(.horizontal, 14)
                 .padding(.vertical, 10)
@@ -56,6 +63,23 @@ private struct MenuBarHeader: View {
                     .monospacedDigit()
             }
             .accessibilityElement(children: .combine)
+        }
+    }
+}
+
+/// Shown while an update Sparkle found is waiting for the user; Install brings its prompt to the front.
+private struct MenuBarUpdate: View {
+    let version: String
+    @Environment(Updater.self) private var updater
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Label("CareMyMac \(version) is available", systemImage: "arrow.down.circle")
+                .font(.callout)
+                .lineLimit(1)
+            Spacer(minLength: 8)
+            Button("Install…") { updater.checkForUpdates() }
+                .controlSize(.small)
         }
     }
 }

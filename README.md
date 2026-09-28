@@ -13,8 +13,9 @@ A native macOS activity monitor organized around apps. Pick an app and see every
 - **Cleanup**: user caches, logs, developer build products and package caches (Xcode Derived Data, npm, Homebrew, …), and old installers in Downloads, measured by allocated size. Selected items move to the Trash; caches of running apps and your own downloads start unselected. Empty Trash is the one permanent deletion and asks first.
 - **Uninstaller**: the apps in /Applications and ~/Applications with their size and when you last opened them, and each app’s leftovers in your Library, matched by exact bundle ID or name. The app and the leftovers you pick move to the Trash; apps an installer owns as the system move with your administrator password.
 - **Optimize**: launch agents and daemons with the app each belongs to, whether it runs and whether it starts at login; disable, enable or remove your own agents (system items are read-only). Maintenance tasks (Flush DNS Cache, Free Up Memory, Reindex Spotlight, Rebuild Launch Services Database, Thin Time Machine Local Snapshots), each explained, some behind your administrator password. Apps using at least 50% of a core or 2 GB of memory right now.
+- **Updates**: once a day CareMyMac checks the latest GitHub release and, when there's a newer version, shows it with its release notes and offers Install Update, Remind Me Later or Skip This Version. CareMyMac ▸ Check for Updates… checks now. A waiting update also shows in the menu bar panel and in Settings, where automatic checks and automatic installs can be turned off.
 
-Nothing leaves the Mac: no account, no telemetry. Data lives in `~/Library/Application Support/CareMyMac/`.
+Nothing leaves the Mac: no account, no telemetry. The update check downloads `appcast.xml` from GitHub and sends nothing about you or your Mac. Data lives in `~/Library/Application Support/CareMyMac/`.
 
 ## Requirements
 
@@ -32,6 +33,8 @@ just test           # engine tests
 just snapshot busy,thisMac:cpu light   # render pages to PNG (Debug)
 just xcode          # open in Xcode
 just clean          # remove build products
+just package 0.2.0  # build the update zip and signed appcast into build/release
+just publish 0.2.0  # tag v0.2.0 and push it; GitHub Actions publishes the release
 ```
 
 Or open `CareMyMac.xcodeproj` in Xcode and press ⌘R.
@@ -46,6 +49,16 @@ Or open `CareMyMac.xcodeproj` in Xcode and press ⌘R.
 
 The app isn't sandboxed: reading other processes' CPU, memory and ports, quitting apps, and cleaning other apps' caches and leftovers require that. Some Cleanup and Uninstaller folders are protected by macOS; grant Full Disk Access in System Settings ▸ Privacy & Security to see them.
 
+## Releases and updates
+
+Updates use [Sparkle](https://sparkle-project.org). Installed copies read the feed at `https://github.com/rohmanhm/caremymac/releases/latest/download/appcast.xml` (`SUFeedURL` in `CareMyMac/Info.plist`) and install an update only if its EdDSA signature matches `SUPublicEDKey`.
+
+To release, run `just publish 0.2.0` (or create a release with a new `v0.2.0` tag in GitHub). `.github/workflows/release.yml` then runs `scripts/release.sh`: it builds a universal Release app with version 0.2.0, zips it, and writes `appcast.xml` with the release notes and the zip's signature, made with the `SPARKLE_PRIVATE_KEY` repository secret. The workflow attaches `CareMyMac-0.2.0.zip` and `appcast.xml` to the release. Notes you wrote on the release are kept; otherwise GitHub generates them. The version comes from the tag, and the build number matches it.
+
+The private key is also in the login keychain of the Mac that created it, under the account `caremymac` (Sparkle's `generate_keys --account caremymac`, in `build/DD/SourcePackages/artifacts/sparkle/Sparkle/bin`). `just package` signs with it locally, after macOS asks to allow keychain access. If that key is lost, installed copies can't verify new updates and have to be updated by hand once.
+
+The feed has to be downloadable without signing in, so the repository must be public; while it's private, update checks fail quietly. The app is ad-hoc signed, so it has no Team ID: `CareMyMac.entitlements` turns off library validation so the hardened runtime can load Sparkle.framework, and macOS privacy grants such as Full Disk Access may have to be given again after an update.
+
 ## Debug-only launch arguments
 
 Debug builds can render pages to PNG for visual checks without Screen Recording permission:
@@ -57,3 +70,5 @@ CareMyMac.app/Contents/MacOS/CareMyMac -CareMyMacStore /tmp/test.sqlite \
 ```
 
 `-CareMyMacStore` keeps test runs out of your real history. Screen names are the sidebar sources: `busy`, `allApps`, `background`, `developer`, `thisMac`, `storage`, `timeline`, `alerts`, `markers`, `cleanup`, `uninstaller`, `optimize`. `thisMac:<tab>` picks a tab (`all`, `cpu`, `memory`, `disk`, `network`, `graphics`, `battery`); app lists open on their top app. `:wait` waits 12 s before capturing.
+
+Debug builds don't check for updates on a schedule, since a release would replace them. `-CareMyMacFeedURL <url>` points one at a test feed, and `-CareMyMacCheckForUpdates YES` runs Check for Updates… at launch; with `-CareMyMacSnapshotDir` it also saves the update prompt as `update.png` and the menu bar panel as `menubar-update.png`.
