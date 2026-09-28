@@ -19,7 +19,8 @@ struct AppBrowser: View {
                 apps: apps,
                 emptyState: emptyState,
                 selection: $appModel.selectedAppID,
-                sort: $appModel.appSort
+                sort: $appModel.appSort,
+                busyOnly: filter == .applications ? $appModel.busyOnly : nil
             )
             .frame(width: 300)
             Divider()
@@ -29,11 +30,18 @@ struct AppBrowser: View {
         .searchable(text: $search, placement: .toolbar, prompt: "Search Apps")
         .onChange(of: screen, initial: true) { keepSelection(in: apps) }
         .onChange(of: apps.isEmpty) { keepSelection(in: apps) }
+        .onChange(of: appModel.busyOnly) { keepSelection(in: visibleApps) }
     }
+
+    /// Busy only narrows the Apps list, never Background.
+    private var filtersBusy: Bool { filter == .applications && appModel.busyOnly }
 
     private var visibleApps: [AppActivity] {
         let query = search.trimmingCharacters(in: .whitespaces)
-        let matching = monitor.apps.filter { filter.includes($0) && (query.isEmpty || $0.name.localizedCaseInsensitiveContains(query)) }
+        let busy = filtersBusy
+        let matching = monitor.apps.filter {
+            filter.includes($0) && (!busy || AppFilter.isBusy($0)) && (query.isEmpty || $0.name.localizedCaseInsensitiveContains(query))
+        }
         return appModel.appSort.sorted(matching)
     }
 
@@ -47,8 +55,8 @@ struct AppBrowser: View {
         let query = search.trimmingCharacters(in: .whitespaces)
         if monitor.snapshot == nil { return .measuring }
         if !query.isEmpty { return .message("No Results for “\(query)”", "Try another name, or look in another source.") }
+        if filtersBusy { return .message("Nothing Busy", "No app is using more than 1% of a core or 1 MB/s of disk right now.") }
         return switch filter {
-        case .busy: .message("Nothing Busy", "No app is using more than 1% of a core or 1 MB/s of disk right now.")
         case .applications: .message("No Apps Open", "Apps you open appear here.")
         case .background: .message("No Background Processes", "Agents, helpers and system processes appear here.")
         }
@@ -68,6 +76,8 @@ private struct AppList: View {
     let emptyState: EmptyState
     @Binding var selection: String?
     @Binding var sort: AppSort
+    /// nil hides the Busy Only toggle.
+    var busyOnly: Binding<Bool>?
     @State private var pendingQuit: PendingAction?
 
     var body: some View {
@@ -78,6 +88,13 @@ private struct AppList: View {
                     .foregroundStyle(.secondary)
                     .monospacedDigit()
                 Spacer(minLength: 8)
+                if let busyOnly {
+                    Toggle("Busy Only", isOn: busyOnly)
+                        .toggleStyle(.button)
+                        .controlSize(.small)
+                        .fixedSize()
+                        .help("Show only apps using at least 1% of a core or 1 MB/s of disk")
+                }
                 Menu {
                     Picker("Sort By", selection: $sort) {
                         ForEach(AppSort.allCases) { Text($0.title).tag($0) }

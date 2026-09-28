@@ -58,6 +58,18 @@ public extension NetworkInterfaceKind {
     }
 }
 
+public extension MachineInfo {
+    /// SF Symbol for this model. Matches marketing names ("Mac mini") and Intel model IDs ("Macmini8,1"); Apple Silicon IDs ("Mac14,3") don't name the model, so unknowns get the generic desktop.
+    var symbol: String {
+        let name = modelName.lowercased().replacingOccurrences(of: " ", with: "")
+        if name.hasPrefix("macbook") { return "macbook" }
+        if name.hasPrefix("macmini") { return "macmini" }
+        if name.hasPrefix("macstudio") { return "macstudio" }
+        if name.hasPrefix("macpro") { return "macpro.gen3" }
+        return "desktopcomputer"
+    }
+}
+
 /// Live chart window shared by every page.
 public enum LiveRange: Int, CaseIterable, Identifiable, Sendable {
     case oneMinute = 60

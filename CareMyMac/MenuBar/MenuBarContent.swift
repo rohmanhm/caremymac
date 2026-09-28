@@ -46,11 +46,11 @@ private struct MenuBarHeader: View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
             VStack(alignment: .leading, spacing: 2) {
                 Text("CareMyMac").font(.headline)
-                Text(MenuBarStatus.sentence(for: monitor))
+                Text(MacStatus.sentence(for: monitor))
                     .font(.callout)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
-                    .help(MenuBarStatus.sentence(for: monitor))
+                    .help(MacStatus.sentence(for: monitor))
             }
             Spacer(minLength: 8)
             HStack(spacing: 5) {
@@ -81,20 +81,6 @@ private struct MenuBarUpdate: View {
             Button("Install…") { updater.checkForUpdates() }
                 .controlSize(.small)
         }
-    }
-}
-
-/// Plain-language status, same voice as the page subtitles in the main window.
-@MainActor
-enum MenuBarStatus {
-    static func sentence(for monitor: LiveMonitor) -> String {
-        guard let s = monitor.snapshot else { return "Taking a first look…" }
-        if monitor.isPaused { return "Monitoring is paused." }
-        if s.memory.pressure == .critical { return "Memory is running out." }
-        if s.cpu.total > 0.75 { return "Your Mac is working hard." }
-        if s.memory.pressure == .warning { return "Memory is getting tight." }
-        if let app = monitor.apps.first, app.cpu > 0.8 { return "\(app.name) is keeping your Mac busy." }
-        return "Your Mac is taking it easy."
     }
 }
 

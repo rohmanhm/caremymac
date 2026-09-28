@@ -2,7 +2,8 @@
 
 A native macOS activity monitor organized around apps. Pick an app and see everything it's doing: CPU, memory and disk over the last few minutes, and every helper process macOS runs for it. CareMyMac also keeps a per-minute timeline for 30 days, entirely on your Mac.
 
-- **Busy Now, All Apps, Background**: app lists sorted by CPU, memory, disk or name, with an impact meter per row. The selected app shows live charts, its processes, and Show in Finder, Quit and Force Quit. Helpers are grouped under their app by bundle, parent process, and the process macOS holds responsible.
+- **Overview** (where the window opens, ⌘1): a tile per resource with its current value and recent trail (CPU, Memory, Disk, Network, startup disk free space, and Graphics and Battery when this Mac reports them), the five busiest apps, and the latest alerts and markers. Every tile and row opens the page it summarizes.
+- **Apps, Background**: app lists sorted by CPU, memory, disk or name, with an impact meter per row. Busy Only narrows Apps to the ones using at least 1% of a core or 1 MB/s of disk right now. The selected app shows live charts, its processes, and Show in Finder, Quit and Force Quit. Helpers are grouped under their app by bundle, parent process, and the process macOS holds responsible.
 - **Developer**: dev runtimes (Node, Python, Bun, Go, …) grouped by working folder, with their listening ports. **Free a Port** finds whatever listens on a port, list or range (`3000, 5173`, `8000-8010`) in any process you own, and stops or force stops it; ports held by root or other users are flagged as in use.
 - **This Mac**: every resource on one clock (1, 5 or 10 minutes), one hover cursor for all of them, and the top apps underneath. Tabs for CPU, Memory, Disk, Network, Graphics and Battery go into detail.
 - **Storage**: a folder-by-folder index of your home folder (or any folder you choose), with categories.
@@ -70,7 +71,7 @@ CareMyMac.app/Contents/MacOS/CareMyMac -CareMyMacStore /tmp/test.sqlite \
   -CareMyMacSnapshotWarmup 30 -CareMyMacAppearance dark
 ```
 
-`-CareMyMacStore` keeps test runs out of your real history. Screen names are the sidebar sources: `busy`, `allApps`, `background`, `developer`, `thisMac`, `storage`, `timeline`, `alerts`, `markers`, `cleanup`, `uninstaller`, `optimize`. `thisMac:<tab>` picks a tab (`all`, `cpu`, `memory`, `disk`, `network`, `graphics`, `battery`); app lists open on their top app. `:wait` waits 12 s before capturing.
+`-CareMyMacStore` keeps test runs out of your real history. Screen names are the sidebar sources: `overview`, `apps`, `background`, `developer`, `thisMac`, `storage`, `timeline`, `alerts`, `markers`, `cleanup`, `uninstaller`, `optimize`. `thisMac:<tab>` picks a tab (`all`, `cpu`, `memory`, `disk`, `network`, `graphics`, `battery`); `apps:busy` turns on Busy Only; app lists open on their top app. `:wait` waits 12 s before capturing. `-CareMyMacSnapshotScrollToEnd YES` scrolls Overview and Markers to the bottom when they open.
 
 `-CareMyMacShowOnboarding YES` shows the welcome sheet at launch (with `-CareMyMacSnapshotDir` it's captured as `<screen>-sheet.png`); otherwise snapshot runs never show it. `-CareMyMacOnboardingStep <step>` opens it on `welcome`, `timeline`, `alerts`, `developer`, `care` or `setup`.
 

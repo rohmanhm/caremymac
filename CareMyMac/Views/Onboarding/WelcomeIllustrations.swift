@@ -52,8 +52,8 @@ private extension View {
 
 // MARK: - Welcome
 
-/// The app icon over a soft glow of every resource hue, beside the busiest apps on this Mac right now as Busy Now
-/// lists them.
+/// The app icon over a soft glow of every resource hue, beside the busiest apps on this Mac right now as the Apps
+/// list shows them.
 struct WelcomeIllustration: View {
     let isActive: Bool
     @Environment(LiveMonitor.self) private var monitor
@@ -90,7 +90,7 @@ struct WelcomeIllustration: View {
                 }
             VStack(alignment: .leading, spacing: 0) {
                 HStack(alignment: .firstTextBaseline) {
-                    Text("Busy Now").font(.headline)
+                    Text("Apps").font(.headline)
                     Spacer()
                     Label("CPU", systemImage: "arrow.down")
                         .font(.caption)

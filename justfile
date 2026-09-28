@@ -28,8 +28,8 @@ release: (run "Release")
 test:
     cd Packages/CareMyMacKit && swift test
 
-# Render pages to PNG with a throwaway store (Debug only), e.g. `just snapshot overview,cpu:inspect dark`
-snapshot screens="busy,allApps,background,developer,thisMac,thisMac:cpu,thisMac:memory,thisMac:disk,thisMac:network,thisMac:graphics,thisMac:battery,storage,timeline,alerts,markers,cleanup,uninstaller,optimize" appearance="dark" dir="/tmp/caremymac-shots": (build "Debug")
+# Render pages to PNG with a throwaway store (Debug only), e.g. `just snapshot overview,thisMac:cpu dark`
+snapshot screens="overview,apps,apps:busy,background,developer,thisMac,thisMac:cpu,thisMac:memory,thisMac:disk,thisMac:network,thisMac:graphics,thisMac:battery,storage,timeline,alerts,markers,cleanup,uninstaller,optimize" appearance="dark" dir="/tmp/caremymac-shots": (build "Debug")
     "{{derived}}/Build/Products/Debug/CareMyMac.app/Contents/MacOS/CareMyMac" \
         -CareMyMacStore /tmp/caremymac-snapshot.sqlite \
         -CareMyMacSnapshotDir "{{dir}}/{{appearance}}" \

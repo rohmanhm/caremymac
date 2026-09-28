@@ -7,7 +7,7 @@ import CareMyMacUI
 ///     CareMyMac -CareMyMacSnapshotDir /tmp/shots -CareMyMacSnapshotScreens busy,thisMac,thisMac:cpu \
 ///             -CareMyMacSnapshotWarmup 30 -CareMyMacAppearance dark
 ///
-/// `thisMac:<tab>` picks a This Mac tab (`all`, `cpu`, `memory`, …); app lists open on their top app.
+/// `thisMac:<tab>` picks a This Mac tab (`all`, `cpu`, `memory`, …); `apps:busy` turns on Busy Only; app lists open on their top app.
 /// `:wait` waits 12 s before capturing. Warmup lets the live series fill.
 @MainActor
 enum DebugSnapshot {
@@ -32,6 +32,7 @@ enum DebugSnapshot {
                 guard let screen = Screen(rawValue: parts[0]) else { continue }
                 appModel.screen = screen
                 appModel.thisMacTab = parts.dropFirst().lazy.compactMap(ThisMacTab.init(rawValue:)).first ?? .all
+                appModel.busyOnly = parts.contains("busy")
                 try? await Task.sleep(for: .seconds(parts.contains("wait") ? 12 : 2.5))
                 capture(to: "\(directory)/\(request.replacingOccurrences(of: ":", with: "-")).png")
             }

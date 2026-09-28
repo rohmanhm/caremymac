@@ -3,9 +3,10 @@ import CareMyMacUI
 import CareMyMacKit
 import Observation
 
-/// Every source in the sidebar. The first three are app lists; the rest are pages.
+/// Every source in the sidebar. Overview first, then the app lists and Developer; the rest are pages.
 enum Screen: String, CaseIterable, Identifiable, Hashable {
-    case busy, allApps, background, developer
+    case overview
+    case apps, background, developer
     case thisMac, storage, timeline
     case alerts, markers
     case cleanup, uninstaller, optimize
@@ -14,8 +15,8 @@ enum Screen: String, CaseIterable, Identifiable, Hashable {
 
     var title: String {
         switch self {
-        case .busy: "Busy Now"
-        case .allApps: "All Apps"
+        case .overview: "Overview"
+        case .apps: "Apps"
         case .background: "Background"
         case .developer: "Developer"
         case .thisMac: "This Mac"
@@ -29,49 +30,52 @@ enum Screen: String, CaseIterable, Identifiable, Hashable {
         }
     }
 
-    var symbol: String {
+    /// This Mac takes the symbol of the actual model.
+    func symbol(for machine: MachineInfo) -> String {
         switch self {
-        case .busy: "bolt"
-        case .allApps: "square.grid.2x2"
-        case .background: "gearshape.2"
+        case .overview: "waveform.path.ecg"
+        case .apps: "square.grid.2x2"
+        case .background: "square.3.layers.3d.down.right"
         case .developer: "terminal"
-        case .thisMac: "laptopcomputer"
-        case .storage: Resource.storage.symbol
-        case .timeline: "clock"
+        case .thisMac: machine.symbol
+        case .storage: "internaldrive"
+        case .timeline: "chart.xyaxis.line"
         case .alerts: "bell"
         case .markers: "flag"
-        case .cleanup: "sparkles"
-        case .uninstaller: "xmark.bin"
-        case .optimize: "gauge.with.dots.needle.67percent"
+        case .cleanup: "bubbles.and.sparkles"
+        case .uninstaller: "trash"
+        case .optimize: "wrench.and.screwdriver"
         }
     }
 
     /// Which apps an app-list source shows; nil for pages.
     var appFilter: AppFilter? {
         switch self {
-        case .busy: .busy
-        case .allApps: .applications
+        case .apps: .applications
         case .background: .background
         default: nil
         }
     }
 
-    static let apps: [Screen] = [.busy, .allApps, .background, .developer]
+    static let lists: [Screen] = [.apps, .background, .developer]
     static let mac: [Screen] = [.thisMac, .storage, .timeline]
     static let watch: [Screen] = [.alerts, .markers]
     static let care: [Screen] = [.cleanup, .uninstaller, .optimize]
 }
 
 enum AppFilter {
-    case busy, applications, background
+    case applications, background
 
-    /// Busy: at least 1% of a core, or 1 MB/s of disk traffic, right now.
     func includes(_ app: AppActivity) -> Bool {
         switch self {
-        case .busy: app.cpu >= 0.01 || app.diskReadBytesPerSecond + app.diskWriteBytesPerSecond >= 1_000_000
         case .applications: app.kind == .application
         case .background: app.kind != .application
         }
+    }
+
+    /// Busy: at least 1% of a core, or 1 MB/s of disk traffic, right now.
+    static func isBusy(_ app: AppActivity) -> Bool {
+        app.cpu >= 0.01 || app.diskReadBytesPerSecond + app.diskWriteBytesPerSecond >= 1_000_000
     }
 }
 
@@ -128,28 +132,31 @@ enum ThisMacTab: String, CaseIterable, Identifiable, Hashable {
 @MainActor
 @Observable
 final class AppModel {
-    var screen: Screen = .busy
+    var screen: Screen = .overview
     var thisMacTab: ThisMacTab = .all
     /// Selected app in the app list. Kept while the app is gone so the detail can say it quit.
     var selectedAppID: String?
     var appSort: AppSort = .cpu
+    /// Apps list shows only busy apps.
+    var busyOnly = false
     /// Marker selected on the Markers page.
     var selectedMarkerID: UUID?
 
     /// Opens the app list that contains `app` and selects it.
     func show(_ app: AppActivity) {
-        if let filter = screen.appFilter, filter.includes(app) {
-            // Already listed where the user is.
-        } else {
-            screen = app.kind == .application ? .allApps : .background
+        if screen.appFilter?.includes(app) != true {
+            screen = app.kind == .application ? .apps : .background
         }
+        // Busy only would hide an idle app.
+        if screen == .apps, !AppFilter.isBusy(app) { busyOnly = false }
         selectedAppID = app.id
     }
 
-    /// The app list for a resource, sorted by it ("Show All" under a resource's top apps).
-    /// Memory is held by idle apps too, so it opens every app instead of the busy ones.
+    /// The Apps list sorted by a resource ("Show All" under a resource's top apps).
+    /// Memory is held by idle apps too, so it lists every app instead of the busy ones.
     func showApps(sortedBy sort: AppSort) {
         appSort = sort
-        screen = sort == .memory ? .allApps : .busy
+        busyOnly = sort != .memory
+        screen = .apps
     }
 }

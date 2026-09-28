@@ -30,6 +30,7 @@ struct ScreenView: View {
             AppBrowser(screen: screen, filter: filter)
         } else {
             switch screen {
+            case .overview: OverviewScreen()
             case .developer: DeveloperScreen()
             case .thisMac: ThisMacScreen()
             case .storage: StorageScreen()
@@ -39,7 +40,7 @@ struct ScreenView: View {
             case .cleanup: CleanupScreen()
             case .uninstaller: UninstallerScreen()
             case .optimize: OptimizeScreen()
-            case .busy, .allApps, .background: EmptyView()
+            case .apps, .background: EmptyView()
             }
         }
     }

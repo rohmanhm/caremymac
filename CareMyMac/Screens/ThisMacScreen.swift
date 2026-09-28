@@ -45,7 +45,7 @@ private struct ThisMacSummary: View {
         let domain = monitor.domain(range)
         ScrollView {
             VStack(alignment: .leading, spacing: Metrics.gap) {
-                PageHeader("This Mac", subtitle: status) {
+                PageHeader("This Mac", subtitle: MacStatus.sentence(for: monitor)) {
                     ThermalBadge()
                     RangePicker()
                 }
@@ -66,15 +66,6 @@ private struct ThisMacSummary: View {
             .padding(Metrics.pagePadding)
         }
         .pageBackground()
-    }
-
-    private var status: String {
-        guard let s = monitor.snapshot else { return "Taking a first look…" }
-        if s.memory.pressure == .critical { return "Memory is running out." }
-        if s.cpu.total > 0.75 { return "Your Mac is working hard." }
-        if s.memory.pressure == .warning { return "Memory is getting tight." }
-        if let app = monitor.apps.first, app.cpu > 0.8 { return "\(app.name) is keeping your Mac busy." }
-        return "Your Mac is taking it easy."
     }
 
     private func lanes(domain: ClosedRange<Date>) -> [Lane] {

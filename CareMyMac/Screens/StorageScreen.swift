@@ -127,8 +127,7 @@ private struct VolumeCard: View {
     }
 
     private var usedShare: Double {
-        guard let volume, volume.totalBytes > 0 else { return 0 }
-        return min(max(Double(volume.usedBytes) / Double(volume.totalBytes), 0), 1)
+        volume?.usedShare ?? 0
     }
 
     private var capacityText: String {
@@ -159,7 +158,8 @@ private struct VolumeCard: View {
     }
 }
 
-private struct CapacityBar: View {
+/// Used share of a volume, in the Storage hue.
+struct CapacityBar: View {
     let share: Double
 
     var body: some View {
@@ -172,6 +172,14 @@ private struct CapacityBar: View {
             }
         }
         .frame(height: 8)
+    }
+}
+
+extension VolumeStats {
+    /// Used share of capacity, 0...1; purgeable space counts as free, as in Finder.
+    var usedShare: Double {
+        guard totalBytes > 0 else { return 0 }
+        return min(max(Double(usedBytes) / Double(totalBytes), 0), 1)
     }
 }
 
