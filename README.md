@@ -55,11 +55,22 @@ The app isn't sandboxed: reading other processes' CPU, memory and ports, quittin
 
 Updates use [Sparkle](https://sparkle-project.org). Installed copies read the feed at `https://github.com/rohmanhm/caremymac/releases/latest/download/appcast.xml` (`SUFeedURL` in `CareMyMac/Info.plist`) and install an update only if its EdDSA signature matches `SUPublicEDKey`.
 
-To release, run `just publish 0.2.0` (or create a release with a new `v0.2.0` tag in GitHub). `.github/workflows/release.yml` then runs `scripts/release.sh`: it builds a universal Release app with version 0.2.0, zips it, and writes `appcast.xml` with the release notes and the zip's signature, made with the `SPARKLE_PRIVATE_KEY` repository secret. The workflow attaches `CareMyMac-0.2.0.zip` and `appcast.xml` to the release. Notes you wrote on the release are kept; otherwise GitHub generates them. The version comes from the tag, and the build number matches it.
+To release, run `just publish 0.2.0` (or create a release with a new `v0.2.0` tag in GitHub). `.github/workflows/release.yml` then runs `scripts/release.sh`: it archives a universal Release app with version 0.2.0, exports it signed with the Developer ID Application certificate of team `NJVVS6LHNX`, has Apple notarize it and staples the ticket, zips it, and writes `appcast.xml` with the release notes and the zip's signature, made with the `SPARKLE_PRIVATE_KEY` repository secret. The workflow attaches `CareMyMac-0.2.0.zip` and `appcast.xml` to the release. Notes you wrote on the release are kept; otherwise GitHub generates them. The version comes from the tag, and the build number matches it.
 
-The private key is also in the login keychain of the Mac that created it, under the account `caremymac` (Sparkle's `generate_keys --account caremymac`, in `build/DD/SourcePackages/artifacts/sparkle/Sparkle/bin`). `just package` signs with it locally, after macOS asks to allow keychain access. If that key is lost, installed copies can't verify new updates and have to be updated by hand once.
+The workflow needs these repository secrets (Settings ▸ Secrets and variables ▸ Actions, or `gh secret set NAME`):
 
-The feed has to be downloadable without signing in, so the repository must be public; while it's private, update checks fail quietly. The app is ad-hoc signed, so it has no Team ID: `CareMyMac.entitlements` turns off library validation so the hardened runtime can load Sparkle.framework, and macOS privacy grants such as Full Disk Access may have to be given again after an update.
+| Secret | Value |
+| --- | --- |
+| `DEVELOPER_ID_CERTIFICATE_P12` | The Developer ID Application certificate with its private key, exported from Keychain Access as a `.p12`, base64-encoded: `base64 -i DeveloperID.p12 \| gh secret set DEVELOPER_ID_CERTIFICATE_P12` |
+| `DEVELOPER_ID_CERTIFICATE_PASSWORD` | The password chosen when exporting the `.p12` |
+| `NOTARY_KEY_P8` | An App Store Connect API key with the Developer role (App Store Connect ▸ Users and Access ▸ Integrations ▸ Team Keys), the downloaded `AuthKey_<id>.p8` as is: `gh secret set NOTARY_KEY_P8 < AuthKey_<id>.p8` |
+| `NOTARY_KEY_ID` | That key's Key ID |
+| `NOTARY_ISSUER_ID` | The Issuer ID shown above the team keys |
+| `SPARKLE_PRIVATE_KEY` | The EdDSA key that signs updates, below |
+
+The private key is also in the login keychain of the Mac that created it, under the account `caremymac` (Sparkle's `generate_keys --account caremymac`, in `build/DD/SourcePackages/artifacts/sparkle/Sparkle/bin`). `just package` signs with it locally, after macOS asks to allow keychain access. It notarizes with the notarytool profile `caremymac`, stored once with `xcrun notarytool store-credentials caremymac --key AuthKey_<id>.p8 --key-id <id> --issuer <issuer>`. If the EdDSA key is lost, installed copies can't verify new updates and have to be updated by hand once.
+
+The feed has to be downloadable without signing in, so the repository must be public; while it's private, update checks fail quietly. Release builds, including `just release`, sign with the Developer ID, so the certificate must be in the keychain. Debug builds are ad-hoc signed without the hardened runtime, which would refuse to load Sparkle.framework without a Team ID. Versions up to 0.2.0 were ad-hoc signed: updating from them to a Developer ID build works because the EdDSA key is unchanged, but macOS privacy grants such as Full Disk Access have to be given once more.
 
 ## Debug-only launch arguments
 
