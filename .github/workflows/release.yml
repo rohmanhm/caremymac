@@ -1,6 +1,7 @@
 # Pushing a tag like v0.2.0 builds CareMyMac, signs it with the Developer ID, notarizes it, signs the update, and
-# publishes the GitHub release that installed copies find through Sparkle (appcast.xml on the latest release). A
-# release created in the GitHub UI with a new tag also triggers this; its notes are kept and the files are attached.
+# publishes the GitHub release that installed copies find through Sparkle (appcast.xml on the latest release),
+# with the drag-to-install disk image for new installs. A release created in the GitHub UI with a new tag also
+# triggers this; its notes are kept and the files are attached.
 name: Release
 
 on:
@@ -64,7 +65,7 @@ jobs:
           printf '%s' "$NOTARY_KEY_P8" > "$RUNNER_TEMP/notary.p8"
           echo "NOTARY_KEY=$RUNNER_TEMP/notary.p8" >> "$GITHUB_ENV"
 
-      - name: Build, sign, notarize and sign the update
+      - name: Build, sign, notarize, sign the update and make the disk image
         env:
           NOTARY_KEY_ID: ${{ secrets.NOTARY_KEY_ID }}
           NOTARY_ISSUER_ID: ${{ secrets.NOTARY_ISSUER_ID }}
@@ -73,7 +74,7 @@ jobs:
 
       - name: Publish
         run: |
-          files=(build/release/CareMyMac-*.zip build/release/appcast.xml)
+          files=(build/release/CareMyMac-*.dmg build/release/CareMyMac-*.zip build/release/appcast.xml)
           if [[ "${{ steps.notes.outputs.exists }}" == true ]]; then
             gh release upload "$TAG" "${files[@]}" --clobber
           else

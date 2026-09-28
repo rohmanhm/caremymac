@@ -35,7 +35,8 @@ just test           # engine tests
 just snapshot busy,thisMac:cpu light   # render pages to PNG (Debug)
 just xcode          # open in Xcode
 just clean          # remove build products
-just package 0.2.0  # build the update zip and signed appcast into build/release
+just package 0.2.0  # build the update zip, signed appcast and notarized disk image into build/release
+just dmg            # Release build in an unsigned disk image at build/CareMyMac.dmg, to check its layout
 just publish 0.2.0  # tag v0.2.0 and push it; GitHub Actions publishes the release
 ```
 
@@ -55,7 +56,9 @@ The app isn't sandboxed: reading other processes' CPU, memory and ports, quittin
 
 Updates use [Sparkle](https://sparkle-project.org). Installed copies read the feed at `https://github.com/rohmanhm/caremymac/releases/latest/download/appcast.xml` (`SUFeedURL` in `CareMyMac/Info.plist`) and install an update only if its EdDSA signature matches `SUPublicEDKey`.
 
-To release, run `just publish 0.2.0` (or create a release with a new `v0.2.0` tag in GitHub). `.github/workflows/release.yml` then runs `scripts/release.sh`: it archives a universal Release app with version 0.2.0, exports it signed with the Developer ID Application certificate of team `NJVVS6LHNX`, has Apple notarize it and staples the ticket, zips it, and writes `appcast.xml` with the release notes and the zip's signature, made with the `SPARKLE_PRIVATE_KEY` repository secret. The workflow attaches `CareMyMac-0.2.0.zip` and `appcast.xml` to the release. Notes you wrote on the release are kept; otherwise GitHub generates them. The version comes from the tag, and the build number matches it.
+To release, run `just publish 0.2.0` (or create a release with a new `v0.2.0` tag in GitHub). `.github/workflows/release.yml` then runs `scripts/release.sh`: it archives a universal Release app with version 0.2.0, exports it signed with the Developer ID Application certificate of team `NJVVS6LHNX`, has Apple notarize it and staples the ticket, zips it, and writes `appcast.xml` with the release notes and the zip's signature, made with the `SPARKLE_PRIVATE_KEY` repository secret. It then puts the stapled app in `CareMyMac-0.2.0.dmg`, signs the disk image with the same certificate, and has it notarized and stapled too. The workflow attaches `CareMyMac-0.2.0.dmg`, `CareMyMac-0.2.0.zip` and `appcast.xml` to the release. Notes you wrote on the release are kept; otherwise GitHub generates them. The version comes from the tag, and the build number matches it.
+
+The disk image is the download for new installs: opening it shows CareMyMac beside a link to Applications, with an arrow and "Drag CareMyMac to Applications to install" between them. `scripts/dmg.sh` builds it with [dmgbuild](https://github.com/dmgbuild/dmgbuild), run through `pipx` (preinstalled on GitHub's macOS runners, `brew install pipx` locally), which writes the Finder layout without opening Finder. The window size and icon positions are in `scripts/dmg-settings.py`; `scripts/dmg-background.swift` draws the background at 1x and 2x to match them. Updates keep using the zip.
 
 The workflow needs these repository secrets (Settings ▸ Secrets and variables ▸ Actions, or `gh secret set NAME`):
 

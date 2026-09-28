@@ -38,9 +38,14 @@ snapshot screens="overview,apps,apps:busy,background,developer,thisMac,thisMac:c
         -CareMyMacAppearance {{appearance}}
     @echo "Snapshots in {{dir}}/{{appearance}}"
 
-# Build the update zip and signed appcast into build/release, e.g. `just package 0.2.0` (signs with the keychain key)
+# Build the update zip, signed appcast and notarized disk image into build/release, e.g. `just package 0.2.0` (signs with the keychain key)
 package version:
     scripts/release.sh {{version}}
+
+# Build the Release app and an unsigned drag-to-install disk image of it at build/CareMyMac.dmg, to check the layout
+dmg: (build "Release")
+    scripts/dmg.sh "{{derived}}/Build/Products/Release/CareMyMac.app" build/CareMyMac.dmg
+    open build/CareMyMac.dmg
 
 # Tag a version and push the tag; the Release workflow builds and publishes it, e.g. `just publish 0.2.0`
 publish version:
