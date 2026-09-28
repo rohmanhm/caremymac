@@ -6,6 +6,8 @@ import UserNotifications
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDelegate {
+    /// Declared before `monitor`: stored properties initialize in order, and opening the store creates it.
+    let onboarding = Onboarding(storeExists: FileManager.default.fileExists(atPath: AppDelegate.storeURL.path(percentEncoded: false)))
     let monitor = LiveMonitor(engine: MonitorEngine(storeURL: AppDelegate.storeURL))
     let appModel = AppModel()
     let notifier = AlertNotifier()
@@ -65,6 +67,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
             openWindow?(id: WindowID.main)
         }
         NSApp.activate()
+    }
+
+    /// Help ▸ Welcome to CareMyMac: the first-run sheet again, over the main window.
+    func showWelcome() {
+        showMainWindow()
+        onboarding.isPresented = true
     }
 
     // MARK: UNUserNotificationCenterDelegate

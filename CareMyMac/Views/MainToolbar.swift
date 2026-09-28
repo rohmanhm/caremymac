@@ -28,6 +28,7 @@ struct CareMyMacCommands: Commands {
     let monitor: LiveMonitor
     let appModel: AppModel
     let updater: Updater
+    let showWelcome: () -> Void
 
     var body: some Commands {
         CommandGroup(after: .appInfo) {
@@ -55,6 +56,9 @@ struct CareMyMacCommands: Commands {
                         .keyboardShortcut(KeyEquivalent(Character("\(index + 1)")), modifiers: .command)
                 }
             }
+        }
+        CommandGroup(before: .help) {
+            Button("Welcome to CareMyMac", action: showWelcome)
         }
     }
 }

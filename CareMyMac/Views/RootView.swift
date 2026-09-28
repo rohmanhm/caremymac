@@ -4,6 +4,7 @@ import SwiftUI
 
 struct RootView: View {
     @Environment(AppModel.self) private var appModel
+    @Environment(Onboarding.self) private var onboarding
 
     var body: some View {
         NavigationSplitView {
@@ -16,6 +17,7 @@ struct RootView: View {
                 .toolbar { MainToolbar() }
         }
         .frame(minWidth: 1100, minHeight: 640)
+        .sheet(isPresented: Bindable(onboarding).isPresented) { WelcomeSheet() }
     }
 }
 

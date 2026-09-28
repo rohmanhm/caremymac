@@ -341,11 +341,7 @@ private struct PartialAccessNotice: View {
                 .monospacedDigit()
                 .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 8)
-            Button("Open Full Disk Access") {
-                if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles") {
-                    NSWorkspace.shared.open(url)
-                }
-            }
+            Button("Open Full Disk Access") { FullDiskAccess.openSystemSettings() }
             .controlSize(.small)
         }
     }

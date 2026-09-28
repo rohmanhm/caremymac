@@ -11,11 +11,16 @@ struct CareMyMacApp: App {
             RootView()
                 .environment(delegate.monitor)
                 .environment(delegate.appModel)
+                .environment(delegate.onboarding)
+                .environment(delegate.notifier)
+                .environment(delegate.loginItem)
                 .capturesOpenWindow(for: delegate)
         }
         .defaultSize(width: 1280, height: 880)
         .windowToolbarStyle(.unified)
-        .commands { CareMyMacCommands(monitor: delegate.monitor, appModel: delegate.appModel, updater: delegate.updater) }
+        .commands {
+            CareMyMacCommands(monitor: delegate.monitor, appModel: delegate.appModel, updater: delegate.updater, showWelcome: delegate.showWelcome)
+        }
 
         Settings {
             SettingsView()

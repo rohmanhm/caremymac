@@ -12,6 +12,8 @@ enum SettingsKey {
     static let menuBarMetric = "menuBar.metric"
     static let menuBarStyle = "menuBar.style"
     static let projectsIncludeWithoutPorts = "projects.includeWithoutPorts"
+    /// Absent before the welcome sheet first appears; see `Onboarding`.
+    static let onboardingCompleted = "onboarding.completed"
 
     static func registerDefaults() {
         UserDefaults.standard.register(defaults: [
