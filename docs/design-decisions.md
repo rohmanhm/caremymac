@@ -1,0 +1,41 @@
+# Design decisions
+
+## Structure: Apps first (decided from a four-direction review)
+
+The first shell (Overview, a Resources section and a Workspace section in the sidebar, a chart card over an "Apps & activity" table, a Live pill in the toolbar) matched Pulse (pulsemac.app) piece for piece. CareMyMac is now organized the way Mail is: sources, a list, a detail.
+
+- **Sidebar sources.** Untitled first group: Busy Now, All Apps, Background, Developer. "Mac": This Mac, Storage, Timeline. "Watch": Alerts, Markers. "Care": Cleanup, Uninstaller, Optimize. No footer; Settings is ⌘,. ⌘1–⌘9 follow this order (Care is last so the existing shortcuts stay put and has none).
+- **App lists** (Busy Now, All Apps, Background) are a 300 pt list beside the selected app. Rows: icon, name, "N processes · memory" (CPU when sorted by memory), the sorted value, and a five-bar impact meter. Sort menu: CPU, Memory, Disk, Name. Search is the toolbar search field. A source opens on its top app unless the selected app is already listed.
+  - Busy Now: at least 1% of a core or 1 MB/s of disk right now, any kind.
+  - All Apps: regular apps. Background: agents, helpers and system processes.
+- **App detail**: 56 pt icon, name, bundle ID · kind · process count, Show in Finder and a Quit… split button (Force Quit in its menu). Then CPU, Memory and Disk cards for this app, from `LiveMonitor`'s per-app trails, on the shared 1/5/10 Min range and one scrub cursor. Then every process (busiest first) with a stop button and context menu. The whole detail is one scroll surface; a nested scroll view or `Table` there broke the column layout.
+- **Developer ▸ Free a Port**: a card above the project list. It looks up typed ports (single, comma/space list, ranges, at most 1,024) across every process of this user, not just detected dev runtimes, because the process holding a port is often Docker, a JVM or an app. Rows reuse the project rows' port chips and the Stop / Force Stop confirmation; "Stop All…" stops every holder. Ports with no visible holder that still fail a wildcard bind are reported as held outside your account (root, another user, or just released) instead of "free". The lookup reruns 1 s after a stop so the result shows the port freed.
+- **This Mac** keeps the shared-clock timeline ("All") and one tab per resource (CPU, Memory, Disk, Network, Graphics, Battery). The tab control sits in a `safeAreaBar` above the page, not in the toolbar, so pause and Add Marker never fall into the overflow menu at the minimum width (1100 pt).
+- **Top Apps**: the resource tabs and All show the six top apps for that resource instead of a full table. Rows open the app in the app browser; "Show All" opens Busy Now (All Apps for memory) sorted by that resource.
+- **Toolbar**: pause and Add Marker only. Share Summary… and Copy Summary (⇧⌘C) are in the File menu.
+- **Names**: Markers (not "saved moments"), Developer (not "Projects"), Timeline (not "History"), This Mac (not "Overview"), Top Apps. Range labels are "1 Min / 5 Min / 10 Min". Engine types keep their stored names (`SavedMoment`, `HistoryRecord`); only the UI changed.
+- **Care** (Cleanup, Uninstaller, Optimize) never deletes permanently except Empty Trash: everything else goes to the Trash via `CareFiles.moveToTrash`, behind a confirmation stating count and size, then rescans and lists failures. Missing Full Disk Access is a notice, not an error.
+  - Cleanup: one card per category with a tri-state select-all and rows collapsed after five; empty categories say "Nothing to clean" rather than hiding. Sizes fill in as measured (4 at a time) and nothing can be removed until measuring finishes, so the confirmation always states the real count and size. Developer paths claim their folders before user caches, so nothing is counted twice. `com.apple.*` caches are never listed; caches of running apps start unselected.
+  - Uninstaller: the app-browser split (list beside a detail). Leftovers match only by exact bundle identifier or exact app name, never by substring, and helper IDs count only from the app's own vendor domain. A running app must be quit (never force quit) first. If the bundle can't be trashed, its leftovers stay put; root-owned bundles move into `~/.Trash` with the administrator password (`NSWorkspace.recycle` fails the same way and never asks).
+  - Optimize: honest about what each command does. Administrator tasks run one fixed command through `osascript … with administrator privileges`; cancelling the password dialog isn't an error. Only your own agents in `~/Library/LaunchAgents` can be changed; removal moves the plist to the Trash. Apps registered with Login Items (SMAppService) are sent to System Settings, since they can't be listed without root. Launch Services is rebuilt with `lsregister -gc -r -f -all local,system,user` because `-kill` is gone from macOS.
+
+Rejected:
+- **Watchlist** (Stocks-style sidebar rows with sparklines and one Live-to-1M range picker): the biggest visual change at the lowest cost, but still organized by resource.
+- **Toolbar tabs** (Activity Monitor): reads as Activity Monitor with colors.
+- **System Settings** (tinted tiles, grouped forms): cheapest, but still a sidebar of resources, the smallest move away from Pulse.
+
+## This Mac "All" tab — decided from the Overview prototype (Native / Timeline / Glance)
+
+- **Structure: Timeline.** Every resource is a lane on one shared clock. One hover cursor scrubs every lane at once and the lane values switch to the hovered moment. Clicking a lane's label opens that resource's tab. Top Apps sit directly under the lanes.
+- **Material: Native restraint.** System window/content backgrounds, hairline separators (0.5 pt), one 12 pt continuous corner radius for cards, no shadows in dark mode. Color appears only on data (lines, fills, icons, bars); chrome stays neutral.
+- **Type:** SF Pro text styles only (largeTitle page titles, title3 lane values, callout labels, caption meta). Every live number uses monospaced digits.
+- **Color:** one OKLCH hue per resource, equal perceived vividness (share of each hue's sRGB chroma ceiling):
+  CPU 255, Memory 300, Disk 62, Network 200, Storage 230, Graphics 345, Battery 150.
+  Light L 0.58 / 90 %, dark L 0.74 / 72 % (desaturated for dark grounds). Secondary series (disk write, upload) are the same hue, lighter, dashed.
+- **Borrowed from Glance:** a one-line plain-language status under the title ("Your Mac is taking it easy.").
+- **Motion:** no animation on live data (values and charts update instantly every tick); hover and press feedback only. Reduced Motion removes the rest.
+- **Performance rule:** the scrub cursor is an overlay that reads a tiny observable; chart marks never depend on the cursor, so hovering never re-renders a chart. Per-app trails are stored outside observation; the app detail re-renders through `apps` once per tick.
+
+Rejected:
+- **Glance** as the structure: rings and verdict tiles show the present only; the app's promise is "find the spike", which needs history on screen. Least dense of the three.
+- **Native panel grid**: six small sparklines on independent axes make it hard to line up what spiked with what else moved at the same moment.
